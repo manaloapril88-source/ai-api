@@ -3,38 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI TTS Assistant</title>
+    <title>AI Voice Converter</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .box { background: #1e1e1e; padding: 30px; border-radius: 15px; width: 400px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; background: #333; color: white; border: none; margin-bottom: 10px; box-sizing: border-box; }
-        select, button { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: none; }
-        button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #555; }
-        #status { font-size: 0.8rem; color: #888; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1a1a1a; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; }
+        h2 { text-align: center; color: #00ff99; margin-top: 0; }
+        textarea { width: 100%; height: 100px; padding: 12px; border-radius: 8px; background: #252525; color: white; border: 1px solid #444; box-sizing: border-box; resize: none; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; }
+        button { background: #00ff99; color: black; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; width: 100%; }
+        button:hover { background: #00cc7a; transform: translateY(-2px); }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        #status { text-align: center; margin-top: 15px; font-size: 13px; color: #888; }
+        audio { width: 100%; margin-top: 20px; border-radius: 8px; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h3>AI TTS CONVERTER</h3>
-        <textarea id="text" placeholder="I-type ang sasabihin..."></textarea>
-        <select id="voice">
-            <option value="alloy">Alloy (Natural)</option>
-            <option value="echo">Echo (Male)</option>
-            <option value="nova">Nova (Female)</option>
-        </select>
-        <button id="btn">CONVERT TO VOICE</button>
-        <div id="status">Ready</div>
-        <audio id="player" controls style="width: 100%; margin-top: 20px; display:none;"></audio>
-    </div>
 
-    <script>
-        const btn = document.getElementById('btn');
-        const player = document.getElementById('player');
-        
-        btn.onclick = () => {
-            const text = document.getElementById('text').value;
-            const voice = document.getElementById('voice').value;
+<div class="card">
+    <h2>AI Voice Assistant</h2>
+    <textarea id="prompt" placeholder="Ano ang sasabihin ng AI?"></textarea>
+    
+    <div class="grid">
+        <select id="voice">
+            <option value="alloy">Voice: Alloy</option>
+            <option value="echo">Voice: Echo</option>
+            <option value="nova">Voice: Nova</option>
+            <option value="shimmer">Voice: Shimmer</option>
+        </select>
+        <select id="emotion">
+            <option value="neutral">Emotion: Neutral</option>
+            <option value="happy">Emotion: Happy</option>
+            <option value="excited">Emotion: Excited</option>
+            <option value="calm">Emotion: Calm</option>
+        </select>
+    </div>
+    
+    <input type="number" id="seed" placeholder="Seed (Optional)" style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
+
+    <button id="convertBtn">GENERATE VOICE</button>
+    <div id="status">Ready to convert</div>
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+</div>
+
+<script>
+    const btn = document.getElementById('convertBtn');
+    const status = document.getElementById('status');
+    const player = document.getElementById('audioPlayer');
+
+    btn.onclick = async () => {
+        const promptText = document.getElementById('prompt').value.trim();
+        const voice = document.getElementById('voice').value;
+        const emotion = document.getElementById('emotion').value;
+        const seed = document.getElementById('seed').value;
+
+        if (!promptText) return alert("Mag-type ka muna ng sasabihin!");
+
+        btn.disabled = true;
+        status.innerText = "Generating audio... Please wait.";
+        player.style.display = "none";
+
+        // Building the URL based on your PHP GET requirements
+        let apiUrl = `api.php?prompt=${encodeURIComponent(promptText)}&voice=${voice}&emotion=${emotion}`;
+        if(seed) apiUrl += `&seed=${seed}`;
+
+        // Direct fetch check to see if PHP returns an error (JSON) instead of MP3
+        try {
+            player.src = apiUrl;
+            player.style.display = "block";
+            
+            player.oncanplaythrough = () => {
+                status.innerText = "Playing audio...";
+                btn.disabled = false;
+                player.play();
+            };
+
+            player.onerror = () => {
+                status.innerText = "Error: Failed to load audio. Check api.php logs.";
+                btn.disabled = false;
+            };
+
+        } catch (err) {
+            status.innerText = "Error connecting to server.";
+            btn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>            const voice = document.getElementById('voice').value;
             if(!text) return alert("Empty text!");
 
             btn.disabled = true;
