@@ -3,38 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI TTS Converter</title>
+    <title>AI TTS Tester</title>
     <style>
-        :root { --accent: #00ff99; --bg: #121212; --card: #1e1e1e; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: var(--card); padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 450px; border: 1px solid #333; }
-        h2 { text-align: center; color: var(--accent); margin-top: 0; }
-        textarea { width: 100%; height: 120px; background: #2a2a2a; border: 1px solid #444; border-radius: 10px; color: white; padding: 12px; resize: none; font-size: 1rem; box-sizing: border-box; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #333; color: white; font-size: 0.9rem; }
-        input[type="number"] { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
-        button { background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; width: 100%; }
-        button:hover { background: #00cc7a; transform: translateY(-2px); }
-        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
-        #status { text-align: center; margin-top: 15px; font-size: 0.85rem; color: #888; }
-        audio { width: 100%; margin-top: 20px; filter: invert(1); }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #fff; display: flex; justify-content: center; padding: 20px; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+        h2 { color: #00ff88; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #bbb; }
+        textarea, select, input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #333; background: #2a2a2a; color: #fff; box-sizing: border-box; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { width: 100%; padding: 12px; background: #00ff88; color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #00cc6a; }
+        #status { margin-top: 15px; text-align: center; font-size: 0.85rem; }
+        audio { width: 100%; margin-top: 20px; }
+        pre { background: #000; padding: 10px; border-radius: 5px; font-size: 0.75rem; overflow-x: auto; display: none; color: #00ff00; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>AI TTS Converter</h2>
+    <h2>AI TTS Tester</h2>
     
-    <textarea id="textInput" placeholder="I-type ang iyong prompt dito..."></textarea>
-    
+    <div class="form-group">
+        <label>Prompt (Sasabihin ng AI)</label>
+        <textarea id="prompt" placeholder="I-type dito ang message..."></textarea>
+    </div>
+
     <div class="grid">
-        <select id="voice">
-            <option value="alloy">Voice: Alloy</option>
-            <option value="echo">Voice: Echo</option>
-            <option value="nova">Voice: Nova</option>
-            <option value="shimmer">Voice: Shimmer</option>
-            <option value="onyx">Voice: Onyx</option>
-            <option value="fable">Voice: Fable</option>
+        <div class="form-group">
+            <label>Voice</label>
+            <select id="voice">
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Emotion</label>
+            <select id="emotion">
+                <option value="neutral">Neutral</option>
+                <option value="happy">Happy</option>
+                <option value="excited">Excited</option>
+                <option value="calm">Calm</option>
+                <option value="serious">Serious</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="form-group">
+            <label>Seed (Optional)</label>
+            <input type="number" id="seed" placeholder="Random if empty">
+        </div>
+        <div class="form-group">
+            <label>Debug Mode</label>
+            <select id="debug">
+                <option value="0">Off (Play Audio)</option>
+                <option value="1">On (Show JSON)</option>
+            </select>
+        </div>
+    </div>
+
+    <button id="generateBtn">GENERATE SPEECH</button>
+    
+    <div id="status">Ready.</div>
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+    <pre id="debugOutput"></pre>
+</div>
+
+<script>
+    const btn = document.getElementById('generateBtn');
+    const player = document.getElementById('audioPlayer');
+    const status = document.getElementById('status');
+    const debugBox = document.getElementById('debugOutput');
+
+    btn.onclick = async () => {
+        const prompt = document.getElementById('prompt').value.trim();
+        const voice = document.getElementById('voice').value;
+        const emotion = document.getElementById('emotion').value;
+        const seed = document.getElementById('seed').value;
+        const debug = document.getElementById('debug').value;
+
+        if (!prompt) return alert("Huy, mag-type ka muna!");
+
+        btn.disabled = true;
+        status.innerText = "Processing...";
+        player.style.display = "none";
+        debugBox.style.display = "none";
+
+        // Build URL based on your PHP GET variables
+        let url = `api.php?prompt=${encodeURIComponent(prompt)}&voice=${voice}&emotion=${emotion}&debug=${debug}`;
+        if (seed) url += `&seed=${seed}`;
+
+        if (debug === "1") {
+            // Fetch JSON if debug is on
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                debugBox.innerText = JSON.stringify(data, null, 2);
+                debugBox.style.display = "block";
+                status.innerText = "Debug info loaded.";
+            } catch (e) {
+                status.innerText = "Error fetching debug info.";
+            }
+            btn.disabled = false;
+        } else {
+            // Direct Audio Playback
+            player.src = url;
+            player.style.display = "block";
+            player.load();
+            
+            player.oncanplaythrough = () => {
+                status.innerText = "Playing...";
+                player.play();
+                btn.disabled = false;
+            };
+
+            player.onerror = () => {
+                status.innerText = "Error: Baka may mali sa API response.";
+                btn.disabled = false;
+            };
+        }
+    };
+</script>
+
+</body>
+</html>            <option value="fable">Voice: Fable</option>
         </select>
         
         <select id="emotion">
