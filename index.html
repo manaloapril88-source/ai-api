@@ -3,26 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Converter</title>
+    <title>AI TTS Converter</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #1a1a1a; padding: 25px; border-radius: 15px; width: 100%; max-width: 450px; border: 1px solid #333; }
-        h2 { text-align: center; color: #00ff99; margin-top: 0; }
-        textarea { width: 100%; height: 100px; padding: 12px; border-radius: 8px; background: #252525; color: white; border: 1px solid #444; box-sizing: border-box; resize: none; }
+        :root { --accent: #00ff99; --bg: #121212; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: var(--card); padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 450px; border: 1px solid #333; }
+        h2 { text-align: center; color: var(--accent); margin-top: 0; }
+        textarea { width: 100%; height: 120px; background: #2a2a2a; border: 1px solid #444; border-radius: 10px; color: white; padding: 12px; resize: none; font-size: 1rem; box-sizing: border-box; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
-        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; }
-        button { background: #00ff99; color: black; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; width: 100%; }
+        select, input, button { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #333; color: white; font-size: 0.9rem; }
+        input[type="number"] { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        button { background: var(--accent); color: #000; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; width: 100%; }
         button:hover { background: #00cc7a; transform: translateY(-2px); }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
-        #status { text-align: center; margin-top: 15px; font-size: 13px; color: #888; }
-        audio { width: 100%; margin-top: 20px; border-radius: 8px; }
+        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+        #status { text-align: center; margin-top: 15px; font-size: 0.85rem; color: #888; }
+        audio { width: 100%; margin-top: 20px; filter: invert(1); }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>AI Voice Assistant</h2>
-    <textarea id="prompt" placeholder="Ano ang sasabihin ng AI?"></textarea>
+    <h2>AI TTS Converter</h2>
+    
+    <textarea id="textInput" placeholder="I-type ang iyong prompt dito..."></textarea>
     
     <div class="grid">
         <select id="voice">
@@ -30,7 +33,10 @@
             <option value="echo">Voice: Echo</option>
             <option value="nova">Voice: Nova</option>
             <option value="shimmer">Voice: Shimmer</option>
+            <option value="onyx">Voice: Onyx</option>
+            <option value="fable">Voice: Fable</option>
         </select>
+        
         <select id="emotion">
             <option value="neutral">Emotion: Neutral</option>
             <option value="happy">Emotion: Happy</option>
@@ -38,78 +44,57 @@
             <option value="calm">Emotion: Calm</option>
         </select>
     </div>
-    
-    <input type="number" id="seed" placeholder="Seed (Optional)" style="width: 100%; margin-bottom: 15px; box-sizing: border-box;">
 
-    <button id="convertBtn">GENERATE VOICE</button>
-    <div id="status">Ready to convert</div>
-    <audio id="audioPlayer" controls style="display: none;"></audio>
+    <input type="number" id="seed" placeholder="Seed (Optional - e.g. 12345)">
+
+    <button id="convertBtn">CONVERT TO VOICE</button>
+    
+    <div id="status">Ready</div>
+    
+    <audio id="player" controls style="display: none;"></audio>
 </div>
 
 <script>
     const btn = document.getElementById('convertBtn');
+    const player = document.getElementById('player');
     const status = document.getElementById('status');
-    const player = document.getElementById('audioPlayer');
 
-    btn.onclick = async () => {
-        const promptText = document.getElementById('prompt').value.trim();
+    btn.onclick = () => {
+        const text = document.getElementById('textInput').value.trim();
         const voice = document.getElementById('voice').value;
         const emotion = document.getElementById('emotion').value;
         const seed = document.getElementById('seed').value;
 
-        if (!promptText) return alert("Mag-type ka muna ng sasabihin!");
+        if(!text) return alert("Mag-type ka muna ng text!");
 
+        // Reset state
         btn.disabled = true;
-        status.innerText = "Generating audio... Please wait.";
+        status.innerText = "Processing... Hinihintay ang AI.";
         player.style.display = "none";
 
-        // Building the URL based on your PHP GET requirements
-        let apiUrl = `api.php?prompt=${encodeURIComponent(promptText)}&voice=${voice}&emotion=${emotion}`;
+        // Build URL matching your PHP GET parameters
+        let apiUrl = `api.php?prompt=${encodeURIComponent(text)}&voice=${voice}&emotion=${emotion}`;
         if(seed) apiUrl += `&seed=${seed}`;
 
-        // Direct fetch check to see if PHP returns an error (JSON) instead of MP3
-        try {
-            player.src = apiUrl;
-            player.style.display = "block";
-            
-            player.oncanplaythrough = () => {
-                status.innerText = "Playing audio...";
-                btn.disabled = false;
-                player.play();
-            };
-
-            player.onerror = () => {
-                status.innerText = "Error: Failed to load audio. Check api.php logs.";
-                btn.disabled = false;
-            };
-
-        } catch (err) {
-            status.innerText = "Error connecting to server.";
+        // Playback Logic
+        player.src = apiUrl;
+        player.style.display = "block";
+        
+        player.play().then(() => {
             btn.disabled = false;
-        }
+            status.innerText = "Status: Playing Voice...";
+        }).catch(e => {
+            btn.disabled = false;
+            status.innerText = "Error: Check api.php or Network.";
+            console.error("Playback error:", e);
+        });
+    };
+
+    // Reset status when audio ends
+    player.onended = () => {
+        status.innerText = "Status: Finished playing.";
     };
 </script>
 
-</body>
-</html>            const voice = document.getElementById('voice').value;
-            if(!text) return alert("Empty text!");
-
-            btn.disabled = true;
-            document.getElementById('status').innerText = "Processing...";
-            
-            // Auto-detect URL (api.php is in the same folder)
-            const apiUrl = `api.php?prompt=${encodeURIComponent(text)}&voice=${voice}`;
-            
-            player.src = apiUrl;
-            player.style.display = "block";
-            player.play().then(() => {
-                btn.disabled = false;
-                document.getElementById('status').innerText = "Playing...";
-            }).catch(e => {
-                btn.disabled = false;
-                document.getElementById('status').innerText = "Error!";
-            });
-        };
-    </script>
 </body>
 </html>
