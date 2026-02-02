@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI TTS Assistant</title>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .box { background: #1e1e1e; padding: 30px; border-radius: 15px; width: 400px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        textarea { width: 100%; height: 100px; padding: 10px; border-radius: 8px; background: #333; color: white; border: none; margin-bottom: 10px; box-sizing: border-box; }
+        select, button { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: none; }
+        button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #555; }
+        #status { font-size: 0.8rem; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h3>AI TTS CONVERTER</h3>
+        <textarea id="text" placeholder="I-type ang sasabihin..."></textarea>
+        <select id="voice">
+            <option value="alloy">Alloy (Natural)</option>
+            <option value="echo">Echo (Male)</option>
+            <option value="nova">Nova (Female)</option>
+        </select>
+        <button id="btn">CONVERT TO VOICE</button>
+        <div id="status">Ready</div>
+        <audio id="player" controls style="width: 100%; margin-top: 20px; display:none;"></audio>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btn');
+        const player = document.getElementById('player');
+        
+        btn.onclick = () => {
+            const text = document.getElementById('text').value;
+            const voice = document.getElementById('voice').value;
+            if(!text) return alert("Empty text!");
+
+            btn.disabled = true;
+            document.getElementById('status').innerText = "Processing...";
+            
+            // Auto-detect URL (api.php is in the same folder)
+            const apiUrl = `api.php?prompt=${encodeURIComponent(text)}&voice=${voice}`;
+            
+            player.src = apiUrl;
+            player.style.display = "block";
+            player.play().then(() => {
+                btn.disabled = false;
+                document.getElementById('status').innerText = "Playing...";
+            }).catch(e => {
+                btn.disabled = false;
+                document.getElementById('status').innerText = "Error!";
+            });
+        };
+    </script>
+</body>
+</html>
